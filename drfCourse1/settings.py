@@ -103,9 +103,7 @@ DATABASES = {
 db_string=os.getenv('DATABASE_URL')
 DATABASES['default']= dj_database_url.parse(db_string)
 
-#internal db url: 
-#external bd url: 
-#psql command: PGPASSWORD=Fb1KA9jR5J7K3Ao07xOJ1ctU5onZfQsN psql -h dpg-coi2adol5elc73d0ktkg-a.oregon-postgres.render.com -U drf_posts_api_user drf_posts_api
+
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
@@ -142,6 +140,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT= os.path.join(BASE_DIR,'assets')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
