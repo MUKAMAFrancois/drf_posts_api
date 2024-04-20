@@ -103,7 +103,7 @@ DATABASES = {
 db_string=os.getenv('DATABASE_URL')
 DATABASES['default']= dj_database_url.parse(db_string)
 
-#internal db url: postgres://drf_posts_api_user:Fb1KA9jR5J7K3Ao07xOJ1ctU5onZfQsN@dpg-coi2adol5elc73d0ktkg-a/drf_posts_api
+#internal db url: 
 #external bd url: 
 #psql command: PGPASSWORD=Fb1KA9jR5J7K3Ao07xOJ1ctU5onZfQsN psql -h dpg-coi2adol5elc73d0ktkg-a.oregon-postgres.render.com -U drf_posts_api_user drf_posts_api
 
