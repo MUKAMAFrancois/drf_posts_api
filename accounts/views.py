@@ -9,6 +9,8 @@ from rest_framework.decorators import api_view
 from rest_framework.request import Request
 from .models import User
 from drf_yasg.utils import swagger_auto_schema
+import datetime
+from .tokens import create_jwt_pair_for_user
 
 # Create your views here.
 
@@ -42,11 +44,12 @@ class LoginView(APIView):
         user=authenticate(email=email,password=password)
         if not user:
             return Response({'error':'Invalid Credentials'},status=status.HTTP_401_UNAUTHORIZED)
-        token,created=Token.objects.get_or_create(user=user)
+        # token,created=Token.objects.get_or_create(user=user) #expires=datetime.datetime.now()+datetime.timedelta(hours=1))
+        tokens=create_jwt_pair_for_user(user)
         res={
             "msg":"Login successful",
             "data":UserSerializer(instance=user).data,
-            "token":token.key
+            "tokens":tokens
         }
         return Response(data=res,status=status.HTTP_200_OK)
     

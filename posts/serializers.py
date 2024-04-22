@@ -15,6 +15,7 @@ class PostSerializer(serializers.ModelSerializer):
         label='Content',
         required=True
     )
+    author = serializers.ReadOnlyField(source='author.username')
 
     class Meta:
         model = Post
@@ -30,8 +31,3 @@ class PostSerializer(serializers.ModelSerializer):
         if len(value) < 20:
             raise serializers.ValidationError("Content is too short")
         return value
-
-    def create(self, validated_data):
-        user = self.context['request'].user
-        post = Post.objects.create(author=user, **validated_data)
-        return post

@@ -2,7 +2,7 @@ import json
 from django.shortcuts import render,get_object_or_404
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated,AllowAny
 from rest_framework.decorators import api_view,permission_classes
 from rest_framework import status,generics,mixins,routers,relations,viewsets
 from rest_framework.views import APIView
@@ -10,6 +10,8 @@ from .serializers import PostSerializer
 from .models import Post
 import uuid
 from drf_yasg.utils import swagger_auto_schema
+from .permissions import Author_Or_ReadOnly
+from django.http import Http404
 
 
 #function based API views
@@ -101,18 +103,27 @@ class Post_ListCreate(APIView):
     List all posts, or create a new post.
     """
     serializer_class=PostSerializer
-    permission_classes=[IsAuthenticated]
+    
+    def get_permissions(self):
+        if self.request.method=="GET":
+            return [AllowAny()]
+        return [IsAuthenticated()]
+
     @swagger_auto_schema(operation_description="Get all posts",responses={200:PostSerializer(many=True)})
     def get(self,request:Request,*args,**kwargs):
         posts=Post.objects.all()
         serializer=self.serializer_class(instance=posts,many=True)
         return Response(data=serializer.data,status=200)
     
+
+
+
+    
     @swagger_auto_schema(operation_description="Create a post",request_body=PostSerializer,responses={201:PostSerializer})
     def post(self, request: Request,*args,**kwargs):
         serializer =self.serializer_class(data=request.data,context={"request":request})
         if serializer.is_valid():
-            serializer.save()
+            serializer.save(author=request.user)
             res={
                 "msg":"Post created successfully",
                 "data":serializer.data
@@ -127,42 +138,54 @@ class Post_RetrieveUpdateDestroy(APIView):
     Retrieve, update or delete a post instance.
     """
     serializer_class=PostSerializer
-    @swagger_auto_schema(operation_description="Get a single post",responses={200:PostSerializer})
-    def get(self,request:Request,post_id:uuid.UUID):
+    def get_permissions(self):
+        if self.request.method == "GET":
+            return [AllowAny()]
+        return [Author_Or_ReadOnly()]
+    
+    
+    def get_object(self, post_id):
         try:
-             post=get_object_or_404(Post,pk=post_id)
+            return get_object_or_404(Post, pk=post_id)
         except Post.DoesNotExist:
-            return Response(status=status.HTTP_404_NOT_FOUND,data={"message":"Post not found"})
-        serializer=self.serializer_class(instance=post)
-        res={
-            "msg":"Post retrieved successfully",
-            "data":serializer.data
+            raise Http404
+    
+
+    @swagger_auto_schema(operation_description="Get a single post", responses={200: PostSerializer})
+    def get(self, request: Request, post_id: uuid.UUID):
+        post = self.get_object(post_id)
+        serializer = self.serializer_class(instance=post)
+        res = {
+            "msg": "Post retrieved successfully",
+            "data": serializer.data
         }
-        return Response(data=res,status=200)
-    @swagger_auto_schema(operation_description="Update a post",request_body=PostSerializer,responses={200:PostSerializer})
-    def patch(self, request:Request, post_id:uuid.UUID):
-        try:
-            post=get_object_or_404(Post,pk=post_id)
-        except Post.DoesNotExist:
-            return Response(status=status.HTTP_404_NOT_FOUND,data={"message":"Post not found"})
-        serializer = self.serializer_class(instance=post, data=request.data, partial=True) # partial=True allows for partial updates, not all fields are required
+        return Response(data=res, status=200)
+    
+
+
+    @swagger_auto_schema(operation_description="Update a post", request_body=PostSerializer, responses={200: PostSerializer})
+    def patch(self, request: Request, post_id: uuid.UUID):
+        post = self.get_object(post_id)
+        self.check_object_permissions(request, post)
+        serializer = self.serializer_class(instance=post, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
-            res={
-                "msg":"Post updated successfully",
-                "data":serializer.data
+            res = {
+                "msg": "Post updated successfully",
+                "data": serializer.data
             }
             return Response(data=res, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-    @swagger_auto_schema(operation_description="Delete a post",responses={204:"Post deleted successfully"})
-    def delete(self,request:Request,post_id:uuid.UUID):
-        try:
-            post=get_object_or_404(Post,pk=post_id)
-        except Post.DoesNotExist:
-            return Response(status=status.HTTP_404_NOT_FOUND,data={"message":"Post not found"})
+
+
+    
+    @swagger_auto_schema(operation_description="Delete a post", responses={204: "Post deleted successfully"})
+    def delete(self, request: Request, post_id: uuid.UUID):
+        post = self.get_object(post_id)
+        self.check_object_permissions(request, post)
         post.delete()
-        return Response(data={"message":"Post deleted successfully"},status=204)
+        return Response(data={"message": "Post deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
 
 
 
