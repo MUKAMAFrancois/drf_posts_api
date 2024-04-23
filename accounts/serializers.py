@@ -38,7 +38,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('email', 'username', 'password', 'password2', 'first_name', 'last_name', 'bio', 'photo', 'is_active', 'is_staff', 'date_joined')
+        fields = ('id','email', 'username', 'password', 'password2', 'first_name', 'last_name', 'bio', 'photo', 'is_active', 'is_staff', 'date_joined')
         extra_kwargs = {
             'first_name': {'required': False, 'help_text': 'Enter your first name', 'label': 'First Name'},
             'last_name': {'required': False, 'help_text': 'Enter your last name', 'label': 'Last Name'},

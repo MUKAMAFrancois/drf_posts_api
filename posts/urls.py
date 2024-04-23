@@ -14,6 +14,8 @@ urlpatterns = [
     # class based API views
     path('',views.Post_ListCreate.as_view(),name='post_list'),
     path('<uuid:post_id>',views.Post_RetrieveUpdateDestroy.as_view(),name='get_update_delete'),
+    path('<int:author_id>/posts',views.Posts_for_Author.as_view(),name='author_posts'),
+    path('my_posts',views.Posts_for_LoggedInUser.as_view(),name='my_posts'),
 
 
     #generic API views

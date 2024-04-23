@@ -12,6 +12,7 @@ import uuid
 from drf_yasg.utils import swagger_auto_schema
 from .permissions import Author_Or_ReadOnly
 from django.http import Http404
+from rest_framework.pagination import PageNumberPagination
 
 
 #function based API views
@@ -103,18 +104,21 @@ class Post_ListCreate(APIView):
     List all posts, or create a new post.
     """
     serializer_class=PostSerializer
+    pagination_class= PageNumberPagination
     
     def get_permissions(self):
         if self.request.method=="GET":
             return [AllowAny()]
         return [IsAuthenticated()]
 
-    @swagger_auto_schema(operation_description="Get all posts",responses={200:PostSerializer(many=True)})
-    def get(self,request:Request,*args,**kwargs):
-        posts=Post.objects.all()
-        serializer=self.serializer_class(instance=posts,many=True)
-        return Response(data=serializer.data,status=200)
-    
+    @swagger_auto_schema(operation_description="Get all posts", responses={200: PostSerializer(many=True)})
+    def get(self, request: Request, *args, **kwargs):
+        posts = Post.objects.all()
+        paginator = self.pagination_class()
+        page = paginator.paginate_queryset(posts, request)
+        serializer = self.serializer_class(page, many=True)
+        return paginator.get_paginated_response(serializer.data)
+        
 
 
 
@@ -179,7 +183,7 @@ class Post_RetrieveUpdateDestroy(APIView):
     
 
 
-    
+     
     @swagger_auto_schema(operation_description="Delete a post", responses={204: "Post deleted successfully"})
     def delete(self, request: Request, post_id: uuid.UUID):
         post = self.get_object(post_id)
@@ -188,6 +192,38 @@ class Post_RetrieveUpdateDestroy(APIView):
         return Response(data={"message": "Post deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
 
 
+
+class Posts_for_Author(APIView):
+    """
+    List all posts by a specific author
+    """
+    serializer_class=PostSerializer
+    def get_permissions(self):
+        if self.request.method == "GET":
+            return [AllowAny()]
+        return [IsAuthenticated()]
+    
+    @swagger_auto_schema(operation_description="Get all posts by a specific author", responses={200: PostSerializer(many=True)})
+    def get(self, request: Request, author_id:int):
+        posts = Post.objects.filter(author=author_id)
+        serializer = self.serializer_class(instance=posts, many=True)
+        return Response(data=serializer.data, status=200)
+    
+
+class Posts_for_LoggedInUser(APIView):
+    """
+    List all posts by the logged in user
+    """
+    serializer_class=PostSerializer
+    def get_permissions(self):
+        if self.request.method == "GET":
+            return [IsAuthenticated()]
+    
+    @swagger_auto_schema(operation_description="Get all posts by the logged in user", responses={200: PostSerializer(many=True)})
+    def get(self, request: Request):
+        posts = Post.objects.filter(author=request.user)
+        serializer = self.serializer_class(instance=posts, many=True)
+        return Response(data=serializer.data, status=200)
 
 #Generic API views and Model Mixins
     
